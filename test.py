@@ -303,7 +303,7 @@ class UsbDataCollectorGUI:
         filename = filedialog.asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-            initialfile=f"device_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            initialfile=f"U50PC_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         )
         
         if not filename: 
@@ -311,33 +311,115 @@ class UsbDataCollectorGUI:
             
         try:
             with open(filename, 'w') as f:
-                f.write("Site Name,Probe Status,Probe Error,Timestamp,")
+                # Header row 1
+                f.write("U-50PC DataFile\tVersion\t1\t1\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n")
                 
-                for i in range(len(self.current_data['parameters'])):
-                    f.write(f"Param{i+1}_Code,Param{i+1}_Value,Param{i+1}_Unit,Param{i+1}_Status,Param{i+1}_Error,")
+                # Header row 2
+                f.write("No.\tSITE\tDate\tTime\tLatitude\tLongitude\tProbe error\t")
                 
-                f.write("Latitude,Longitude\n")
+                # Parameter headers
+                parameter_headers = [
+                    "Temperature\t10\tError",
+                    "pH\t1\tError",
+                    "pHmV\t24\tError",
+                    "ORP\t2\tError",
+                    "Conductivity\t6\tError",
+                    "Turbidity\t3\tError",
+                    "Dissolved Oxygen\t4\tError",
+                    "DO%\t22\tError",
+                    "TDS\t8\tError",
+                    "Salinity\t7\tError",
+                    "Specific gravity\t9\tError",
+                    "Depth\t11\tError",
+                    "---\t0\tError"
+                ]
                 
-                f.write(f"{self.current_data['site_name']},{self.current_data['probe_status']},{self.current_data['probe_error']},")
+                f.write("\t".join(parameter_headers))
+                f.write("\tBattery voltage\tDevice code\tDate code\tTime code\tUnit code\tFormat code\tStatus code\tSensor error code\n")
                 
+                # Data row
+                # Row number
+                f.write("1\t")
+                
+                # Site name
+                f.write(f"{self.current_data['site_name']}\t")
+                
+                # Date and time
                 if self.current_data['timestamp']:
-                    f.write(f"{self.current_data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')},")
+                    f.write(f"{self.current_data['timestamp'].strftime('%Y/%m/%d')}\t")
+                    f.write(f"{self.current_data['timestamp'].strftime('%H:%M:%S')}\t")
                 else:
-                    f.write(",")
+                    f.write("\t\t")
                 
-                for param in self.current_data['parameters']:
-                    f.write(f"{param['code']},{param['data']},{param['unit']},{param['status']},{param['error']},")
-                
+                # GPS coordinates
                 if self.current_data['gps_coordinates']:
                     lat = self.current_data['gps_coordinates']['latitude']
                     lon = self.current_data['gps_coordinates']['longitude']
                     
-                    lat_str = f"{lat['degrees']}°{lat['minutes']}'{lat['seconds']}\"{lat['direction']}"
-                    lon_str = f"{lon['degrees']}°{lon['minutes']}'{lon['seconds']}\"{lon['direction']}"
+                    lat_str = f"{lat['degrees']} {lat['minutes']} {lat['seconds']} {lat['direction']}"
+                    lon_str = f"{lon['degrees']} {lon['minutes']} {lon['seconds']} {lon['direction']}"
                     
-                    f.write(f"{lat_str},{lon_str}\n")
+                    f.write(f"{lat_str}\t{lon_str}\t")
                 else:
-                    f.write(",\n")
+                    f.write("-- -- -- -\t--- -- -- -\t")
+                
+                # Probe error
+                f.write(f"{self.current_data['probe_error']}\t")
+                
+                # Parameter values
+                # Create a dictionary to map parameter codes to their positions in the output
+                param_mapping = {
+                    '10': 0,  # Temperature
+                    '1': 1,   # pH
+                    '24': 2,  # pHmV
+                    '2': 3,   # ORP
+                    '6': 4,   # Conductivity
+                    '3': 5,   # Turbidity
+                    '4': 6,   # Dissolved Oxygen
+                    '22': 7,  # DO%
+                    '8': 8,   # TDS
+                    '7': 9,   # Salinity
+                    '9': 10,  # Specific gravity
+                    '11': 11, # Depth
+                    '0': 12   # ---
+                }
+                
+                # Initialize parameter values
+                param_values = [""] * 13
+                param_units = ["°C", "pH", "mV", "mV", "mS/cm", "NTU", "mg/L", "%", "g/L", "ppt", "Sigma t", "m", "-"]
+                param_errors = [""] * 13
+                
+                # Fill in values from the data
+                for param in self.current_data['parameters']:
+                    code = param['code'].strip()
+                    if code in param_mapping:
+                        idx = param_mapping[code]
+                        param_values[idx] = param['data']
+                        param_errors[idx] = param['error']
+                
+                # Write parameter values, units, and errors
+                for i in range(13):
+                    if param_values[i]:
+                        f.write(f"{param_values[i]}\t{param_units[i]}\t{param_errors[i]}\t")
+                    else:
+                        f.write(f"-\t{param_units[i]}\t-\t")
+                
+                # Additional fields
+                f.write("    V\t")  # Battery voltage
+                f.write("P30\t")    # Device code
+                
+                # Date and time codes
+                if self.current_data['timestamp']:
+                    f.write(f"D{self.current_data['timestamp'].strftime('%y%m%d')}\t")
+                    f.write(f"T{self.current_data['timestamp'].strftime('%H%M%S')}\t")
+                else:
+                    f.write("D------\tT------\t")
+                
+                # Standard codes
+                f.write("U0000000000000\t")  # Unit code
+                f.write("F2200202131120\t")  # Format code
+                f.write("S1111111111110\t")  # Status code
+                f.write("A0000000000000\n")  # Sensor error code
                     
             self.log_message(f"Data saved to {filename}")
             messagebox.showinfo("Success", f"Data saved to {filename}")
