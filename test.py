@@ -250,7 +250,7 @@ class UsbDataCollectorGUI:
             self.log_message(f"Raw data for parameter 4 (ORP): {response[29 + (3 * 11):29 + (4 * 11)]}")
             self.log_message(f"Raw data for parameter 5 (Conductivity): {response[29 + (4 * 11):29 + (5 * 11)]}")
             self.log_message(f"Raw data for parameter 6 (Turbidity): {response[29 + (5 * 11):29 + (6 * 11)]}")
-            self.log_message(f"Raw data for parameter 7 (DO): {response[29 + (6 * 11):29 + (7 * 11)]}")
+            self.log_message(f"Raw data for parameter 7 (DO): {response[95:106]}")
             self.log_message(f"Raw data for parameter 8 (TDS): {response[29 + (7 * 11):29 + (8 * 11)]}")
             self.log_message(f"Raw data for parameter 9 (Spec Gravity): {response[29 + (8 * 11):29 + (9 * 11)]}")
             self.log_message(f"Raw data for parameter 10 (Depth): {response[29 + (9 * 11):29 + (10 * 11)]}")
