@@ -320,7 +320,7 @@ class UsbDataCollectorGUI:
         self.data_text.insert(tk.END, "Parameters:\n")
         for i, param in enumerate(data['parameters']):
             if param['code'] != '  ' and param['code'] != '':
-                self.data_text.insert(tk.END, f"{i+1}. Code: {param['code']}, Value: {param['data']} {param['unit']}, Status: {param['status']}, Error: {param['error']}\n")
+                self.data_text.insert(tk.END, f"{i+1}. Value: {param['data']} {param['unit']}")
         
         if data['timestamp']:
             self.data_text.insert(tk.END, f"\nTimestamp: {data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -365,7 +365,7 @@ class UsbDataCollectorGUI:
                     f.write(",")
                 
                 for param in self.current_data['parameters']:
-                    f.write(f"{param['code']},{param['data']},{param['unit']},{param['status']},{param['error']},")
+                    f.write(f"{param['data']},{param['unit']}")
                 
                 if self.current_data['gps_coordinates']:
                     lat = self.current_data['gps_coordinates']['latitude']
