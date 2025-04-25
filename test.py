@@ -247,6 +247,7 @@ class UsbDataCollectorGUI:
 
             # params need conversions
             # this not accurate data shout be converted to actual values from milivolts
+            # note that in param 3 use the data in parsed data not in csv
 
             param7_idx = 29 + (6 * 11)
             do_extended_start = param7_idx - 5  
