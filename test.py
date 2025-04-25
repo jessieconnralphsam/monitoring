@@ -244,6 +244,8 @@ class UsbDataCollectorGUI:
                     'unit': response[start_idx+9]
                 }
                 parameters.append(param)
+
+            self.log_message(f"Raw data for parameter 4: {response[29 + (3 * 11):29 + (4 * 11)]}")
             
             date_idx = 173
             try:
