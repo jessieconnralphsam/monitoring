@@ -22,7 +22,6 @@ class UsbDataCollectorGUI:
         self.refresh_ports()
         
     def create_widgets(self):
-
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
         
@@ -67,17 +66,57 @@ class UsbDataCollectorGUI:
         clear_btn = ttk.Button(control_frame, text="Clear Log", command=self.clear_log)
         clear_btn.pack(side=tk.LEFT, padx=5)
         
+        # Enhanced Response Viewport with both horizontal and vertical scrolling
         viewport_frame = ttk.LabelFrame(main_frame, text="Response Viewport", padding="10")
         viewport_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.log_text = scrolledtext.ScrolledText(viewport_frame, height=20, wrap=tk.WORD)
-        self.log_text.pack(fill=tk.BOTH, expand=True, pady=5)
+        # Create container frame for the text and scrollbars
+        viewport_container = ttk.Frame(viewport_frame)
+        viewport_container.pack(fill=tk.BOTH, expand=True)
         
+        # Create scrollbars
+        viewport_vscroll = ttk.Scrollbar(viewport_container, orient=tk.VERTICAL)
+        viewport_hscroll = ttk.Scrollbar(viewport_container, orient=tk.HORIZONTAL)
+        
+        # Create text widget with both scrollbars
+        self.log_text = tk.Text(viewport_container, height=20, wrap=tk.NONE,
+                               yscrollcommand=viewport_vscroll.set,
+                               xscrollcommand=viewport_hscroll.set)
+        
+        # Configure scrollbars
+        viewport_vscroll.config(command=self.log_text.yview)
+        viewport_hscroll.config(command=self.log_text.xview)
+        
+        # Place the scrollbars and text widget
+        viewport_vscroll.pack(side=tk.RIGHT, fill=tk.Y)
+        viewport_hscroll.pack(side=tk.BOTTOM, fill=tk.X)
+        self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Enhanced Parsed Data with both horizontal and vertical scrolling
         data_frame = ttk.LabelFrame(main_frame, text="Parsed Data", padding="10")
         data_frame.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.data_text = scrolledtext.ScrolledText(data_frame, height=10, wrap=tk.WORD)
-        self.data_text.pack(fill=tk.BOTH, expand=True, pady=5)
+        # Create container frame for the text and scrollbars
+        data_container = ttk.Frame(data_frame)
+        data_container.pack(fill=tk.BOTH, expand=True)
+        
+        # Create scrollbars
+        data_vscroll = ttk.Scrollbar(data_container, orient=tk.VERTICAL)
+        data_hscroll = ttk.Scrollbar(data_container, orient=tk.HORIZONTAL)
+        
+        # Create text widget with both scrollbars
+        self.data_text = tk.Text(data_container, height=10, wrap=tk.NONE,
+                                yscrollcommand=data_vscroll.set,
+                                xscrollcommand=data_hscroll.set)
+        
+        # Configure scrollbars
+        data_vscroll.config(command=self.data_text.yview)
+        data_hscroll.config(command=self.data_text.xview)
+        
+        # Place the scrollbars and text widget
+        data_vscroll.pack(side=tk.RIGHT, fill=tk.Y)
+        data_hscroll.pack(side=tk.BOTTOM, fill=tk.X)
+        self.data_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
         self.status_var = tk.StringVar(value="Disconnected")
         status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
