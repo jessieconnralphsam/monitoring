@@ -248,12 +248,16 @@ class UsbDataCollectorGUI:
             # params need conversions
             # this not accurate data shout be converted to actual values from milivolts
 
-            param7_idx = 29 + (7 * 11)
+            param7_idx = 29 + (6 * 11)
+            do_extended_start = param7_idx - 5  
+            do_extended_end = param7_idx + 15   
 
             self.log_message(f"Raw data for parameter 4 (ORP): {response[29 + (3 * 11):29 + (4 * 11)]}")
             self.log_message(f"Raw data for parameter 5 (Conductivity): {response[29 + (4 * 11):29 + (5 * 11)]}")
             self.log_message(f"Raw data for parameter 6 (Turbidity): {response[29 + (5 * 11):29 + (6 * 11)]}")
             self.log_message(f"Raw data for parameter 7 (DO): {response[param7_idx:param7_idx+11]}")
+            self.log_message(f"Extended DO context: {response[do_extended_start:do_extended_end]}")
+            self.log_message(f"DO data field only: '{response[param7_idx+4:param7_idx+9]}'")
             self.log_message(f"Raw data for parameter 8 (TDS): {response[29 + (7 * 11):29 + (8 * 11)]}")
             self.log_message(f"Raw data for parameter 9 (Spec Gravity): {response[29 + (8 * 11):29 + (9 * 11)]}")
             self.log_message(f"Raw data for parameter 10 (Depth): {response[29 + (9 * 11):29 + (10 * 11)]}")
