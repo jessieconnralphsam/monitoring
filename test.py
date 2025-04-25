@@ -320,7 +320,7 @@ class UsbDataCollectorGUI:
         self.data_text.insert(tk.END, "Parameters:\n")
         for i, param in enumerate(data['parameters']):
             if param['code'] != '  ' and param['code'] != '':
-                self.data_text.insert(tk.END, f"{i+1}. Value: {param['data']} {param['unit']}")
+                self.data_text.insert(tk.END, f"{i+1}. Value: {param['data']}")
         
         if data['timestamp']:
             self.data_text.insert(tk.END, f"\nTimestamp: {data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -353,7 +353,7 @@ class UsbDataCollectorGUI:
                 f.write("Site Name,Probe Status,Probe Error,Timestamp,")
                 
                 for i in range(len(self.current_data['parameters'])):
-                    f.write(f"Param{i+1}_Code,Param{i+1}_Value,Param{i+1}_Unit,Param{i+1}_Status,Param{i+1}_Error,")
+                    f.write(f"Param{i+1}_Value")
                 
                 f.write("Latitude,Longitude\n")
                 
