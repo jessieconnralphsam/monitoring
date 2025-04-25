@@ -384,7 +384,7 @@ class UsbDataCollectorGUI:
                     '0': 12   # ---
                 }
                 
-                # Initialize parameter values
+                # Initialize parameter valuesssss
                 param_values = [""] * 13
                 param_units = ["°C", "pH", "mV", "mV", "mS/cm", "NTU", "mg/L", "%", "g/L", "ppt", "Sigma t", "m", "-"]
                 param_errors = [""] * 13
