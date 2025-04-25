@@ -324,7 +324,7 @@ class UsbDataCollectorGUI:
         except Exception as e:
             self.log_message(f"Error parsing response: {e}")
             return None
-    
+    #data summarr parsed data
     def display_data(self, data):
         if not data:
             return
