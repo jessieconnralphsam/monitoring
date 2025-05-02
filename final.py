@@ -40,6 +40,9 @@ class UsbDataCollectorGUI:
             'd12': 11  # Parameter 12 maps to d12
         }
         
+        # Store parsed data for webhook use
+        self.parsed_values = {}
+        
         self.create_widgets()
         self.refresh_ports()
         
@@ -340,20 +343,50 @@ class UsbDataCollectorGUI:
                 }
                 parameters.append(param)
 
-            param7_idx = 29 + (6 * 11)
-            do_extended_start = param7_idx - 5  
-            do_extended_end = param7_idx + 15   
+            # Process the response according to the new parsing method
+            raw = response.strip()
+            parts = raw.split()
 
-            self.log_message(f"Raw data for parameter 1 (temperature): {response[29 + (0 * 11):29 + (1 * 11)]}")
-            self.log_message(f"Raw data for parameter 2 (pH): {response[29 + (1 * 11):29 + (2 * 11)]}")
-            self.log_message(f"Raw data for parameter 3 (pHmv): {response[29 + (2 * 11):29 + (3 * 11)]}")
-            self.log_message(f"Raw data for parameter 4 (ORP): {response[29 + (3 * 11):29 + (4 * 11)]}")
-            self.log_message(f"Raw data for parameter 5 (Conductivity): {response[29 + (4 * 11):29 + (5 * 11)]}")
-            self.log_message(f"Raw data for parameter 6 (Turbidity): {response[29 + (5 * 11):29 + (6 * 11)]}")
-            self.log_message(f"Extended DO context: {response[do_extended_start:do_extended_end]}")
-            self.log_message(f"Raw data for parameter 8 (TDS): {response[29 + (7 * 11):29 + (8 * 11)]}")
-            self.log_message(f"Raw data for parameter 9 (Spec Gravity): {response[29 + (8 * 11):29 + (9 * 11)]}")
-            self.log_message(f"Raw data for parameter 10 (Depth): {response[29 + (9 * 11):29 + (10 * 11)]}")
+            labels = [
+                "Code",
+                "Temperature",
+                "pH",
+                "pHmv",
+                "ORP",
+                "mS/cm",
+                "NTU",
+                "mg/L DO",
+                "g/L TDS",
+                "ppt",
+                "O' T",
+                "m",
+                "%DO"
+            ]
+
+            # Clear previous parsed values
+            self.parsed_values = {}
+
+            def parse_temperature(value):
+                return f"{float(value) % 1000:.2f}"
+
+            def parse_others(value, is_orp=False):
+                return value[:3] if is_orp else value[:4]
+
+            for i in range(1, min(13, len(parts))):
+                try:
+                    value = parts[i]
+                    if labels[i] == "Temperature":
+                        parsed_value = parse_temperature(value)
+                    elif labels[i] == "ORP":
+                        parsed_value = parse_others(value, is_orp=True)
+                    else:
+                        parsed_value = parse_others(value)
+                    
+                    # Store the parsed values for webhook use
+                    self.parsed_values[labels[i]] = parsed_value
+                    self.log_message(f"{labels[i]}: {parsed_value}")
+                except Exception as e:
+                    self.log_message(f"Error parsing parameter {i}: {e}")
 
             date_idx = 173
             try:
@@ -427,12 +460,10 @@ class UsbDataCollectorGUI:
         self.data_text.insert(tk.END, f"Site name: {data['site_name']}\n")
         self.data_text.insert(tk.END, f"Probe status: {data['probe_status']}, Error: {data['probe_error']}\n\n")
         
-        self.data_text.insert(tk.END, "Parameters:\n")
-        for i, param in enumerate(data['parameters']):
-            if param['code'] != '  ' and param['code'] != '':
-                value = param['data'] if param['data'] else "N/A"
-                unit = param['unit'] if param['unit'] != ' ' else ""
-                self.data_text.insert(tk.END, f"{i+1}. Value: {value} {unit}\n")
+        # Display parsed values from the new parsing method
+        self.data_text.insert(tk.END, "Parameters (New Parsing Method):\n")
+        for label, value in self.parsed_values.items():
+            self.data_text.insert(tk.END, f"{label}: {value}\n")
         
         if data['timestamp']:
             self.data_text.insert(tk.END, f"\nTimestamp: {data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -523,7 +554,7 @@ class UsbDataCollectorGUI:
                 self.request_data()
             
             # Send webhook if we have data
-            if self.current_data:
+            if self.parsed_values:  # Use parsed_values instead of current_data
                 self.send_webhook_data()
             
             try:
@@ -537,7 +568,7 @@ class UsbDataCollectorGUI:
                 break
     
     def send_webhook_manual(self):
-        if not self.current_data:
+        if not self.parsed_values:  # Use parsed_values instead of current_data
             messagebox.showerror("Error", "No data available to send")
             return
             
@@ -548,15 +579,39 @@ class UsbDataCollectorGUI:
             # Update parameter mapping from UI
             self.update_webhook_param_map()
             
+            # Map from parameter names to webhook fields
+            param_name_to_index = {
+                "Temperature": 0,
+                "pH": 1,
+                "pHmv": 2,
+                "ORP": 3,
+                "mS/cm": 4,  # Conductivity
+                "NTU": 5,     # Turbidity
+                "mg/L DO": 6, # DO
+                "g/L TDS": 7, # TDS
+                "ppt": 8,     # Spec Gravity
+                "m": 9,       # Depth
+                "O' T": 10,   # Parameter 11
+                "%DO": 11     # Parameter 12
+            }
+            
             # Prepare critical data (d1-d5)
             critical_data = {}
             for i in range(1, 6):
                 field_name = f'd{i}'
                 param_idx = self.webhook_param_map[field_name]
-                if param_idx < len(self.current_data['parameters']):
-                    param_value = self.current_data['parameters'][param_idx]['data']
+                
+                # Find the corresponding parameter name
+                param_name = None
+                for name, idx in param_name_to_index.items():
+                    if idx == param_idx:
+                        param_name = name
+                        break
+                
+                # Get the parsed value if available
+                if param_name and param_name in self.parsed_values:
                     try:
-                        critical_data[field_name] = float(param_value) if param_value else 0.0
+                        critical_data[field_name] = float(self.parsed_values[param_name])
                     except ValueError:
                         critical_data[field_name] = 0.0
                 else:
@@ -567,10 +622,18 @@ class UsbDataCollectorGUI:
             for i in range(6, 13):
                 field_name = f'd{i}'
                 param_idx = self.webhook_param_map[field_name]
-                if param_idx < len(self.current_data['parameters']):
-                    param_value = self.current_data['parameters'][param_idx]['data']
+                
+                # Find the corresponding parameter name
+                param_name = None
+                for name, idx in param_name_to_index.items():
+                    if idx == param_idx:
+                        param_name = name
+                        break
+                
+                # Get the parsed value if available
+                if param_name and param_name in self.parsed_values:
                     try:
-                        non_critical_data[field_name] = float(param_value) if param_value else 0.0
+                        non_critical_data[field_name] = float(self.parsed_values[param_name])
                     except ValueError:
                         non_critical_data[field_name] = 0.0
                 else:
@@ -597,6 +660,7 @@ class UsbDataCollectorGUI:
             # Log the webhook request
             self.log_message(f"Sending webhook to: {self.webhook_url.get()}")
             self.log_message(f"Webhook payload: {json.dumps(payload)}")
+            print(json.dumps(payload))
             
             # Send the webhook request
             response = requests.post(
